@@ -1,12 +1,12 @@
 namespace PXServer.Source.Exceptions;
 
 
-public class RouteException : Exception
+public class ServerException : Exception
 {
     public int StatusCode { get; }
 
 
-    public RouteException(string message, int statusCode) : base(message)
+    public ServerException(string message, int statusCode) : base(message)
     {
         this.StatusCode = statusCode;
     }

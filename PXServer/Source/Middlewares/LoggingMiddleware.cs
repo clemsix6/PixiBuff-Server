@@ -1,24 +1,34 @@
+using NLog;
+using LogLevel = NLog.LogLevel;
+
+
 namespace PXServer.Source.Middlewares;
 
 
 public class LoggingMiddleware
 {
+    private readonly Logger logger;
     private readonly RequestDelegate next;
-    private readonly ILogger<LoggingMiddleware> logger;
 
 
-    public LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> logger)
+    public LoggingMiddleware(RequestDelegate next)
     {
+        this.logger = LogManager.GetCurrentClassLogger();
         this.next = next;
-        this.logger = logger;
     }
 
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var remoteIpAddress = context.Connection.RemoteIpAddress?.ToString();
+        var ipv4 = context.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "??";
+        var remoteIp = $"{ipv4}:{context.Connection.RemotePort}";
         var route = context.Request.Path;
-        this.logger.LogInformation($"Requête reçue. IP: {remoteIpAddress}, Route: {route}");
+
+        var message = $"({remoteIp}) > \"{route}\"";
+        var logEventInfo = LogEventInfo.Create(LogLevel.Info, this.logger.Name, message);
+        logEventInfo.Properties["IsRequestLog"] = true;
+        this.logger.Log(logEventInfo);
+
         await this.next(context);
     }
 }

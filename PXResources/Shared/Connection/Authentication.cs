@@ -1,7 +1,7 @@
-﻿namespace PXResources.Source.NetworkShared.Client;
+﻿namespace PXResources.Shared.Connection;
 
 
-public class RegisterDTO
+public class Authentication
 {
     public required string Name { get; set; }
     public required string Password { get; set; }

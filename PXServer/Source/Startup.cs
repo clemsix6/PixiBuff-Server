@@ -3,8 +3,12 @@ using dotenv.net;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using PXResources.Source.Pixs;
-using PXServer.Source.Database.Mongo;
+using NLog;
+using NLog.Web;
+using PXServer.Source.Database;
+using PXServer.Source.Database.Crates;
+using PXServer.Source.Database.Pixs;
+using PXServer.Source.Engine;
 using PXServer.Source.Exceptions;
 using PXServer.Source.Middlewares;
 using Swashbuckle.AspNetCore.SwaggerUI;
@@ -15,6 +19,10 @@ namespace PXServer.Source;
 
 public class Startup
 {
+    private static readonly Logger Logger =
+        LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
+
+
     private static void AddJwtAuthentication(IHostApplicationBuilder builder)
     {
         var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET");
@@ -76,11 +84,40 @@ public class Startup
     }
 
 
+    private static void SetupLogging(WebApplicationBuilder builder)
+    {
+        builder.Services.AddControllersWithViews();
+        builder.Logging.ClearProviders();
+        builder.Host.UseNLog();
+    }
+
+
+    private static void AddManagers(IHostApplicationBuilder builder)
+    {
+        var database = new MongoDbContext();
+        builder.Services.AddSingleton(database);
+
+        var notificationManager = new NotificationManager(database);
+        builder.Services.AddSingleton(notificationManager);
+
+        var crateManager = new CrateManager(database);
+        builder.Services.AddSingleton(crateManager);
+
+        var inventoryManager = new InventoryManager(database, crateManager);
+        builder.Services.AddSingleton(inventoryManager);
+
+        var playerManager = new PlayerManager(database, notificationManager, crateManager);
+        builder.Services.AddSingleton(playerManager);
+    }
+
+
     private static WebApplicationBuilder SetupBuilder(string[] args)
     {
+        Logger.Info("Building application...");
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddControllers();
-        builder.Services.AddSingleton<MongoDbContext>();
+        SetupLogging(builder);
+        AddManagers(builder);
         AddJsonOptions(builder);
         AddJwtAuthentication(builder);
         AddSwagger(builder);
@@ -90,6 +127,7 @@ public class Startup
 
     private static void RunApp(WebApplication app)
     {
+        Logger.Info("Running application...");
         app.UseMiddleware<ExceptionMiddleware>();
         app.UseMiddleware<LoggingMiddleware>();
 
@@ -103,10 +141,10 @@ public class Startup
             }
         );
         app.UseSwagger();
-
         app.UseAuthentication();
         app.UseAuthorization();
 
+        Logger.Info("Application started");
         app.Run();
     }
 
@@ -120,11 +158,31 @@ public class Startup
     }
 
 
+    private static void AddCrates()
+    {
+        var ctx = new MongoDbContext();
+        var starterCrate = new CratePrefab
+        {
+            PrefabId = "starter_crate",
+            Name = "Starter Crate",
+            Description = "A crate that contains a random starter pix.",
+            Loot =
+            [
+                new CrateLootPrefab { PixPrefabId = "anola", Weight = 100, Level = 1 }
+            ]
+        };
+
+        ctx.CratePrefabs.InsertOne(starterCrate);
+    }
+
+
     private static void AddElements()
     {
         var ctx = new MongoDbContext();
-        var pix = new PrefabPix
+        var pix = new PixPrefab
         {
+            PrefabId = "anola",
+
             Name = "Anola",
             Description = "An electric blue bird.",
 
@@ -133,24 +191,13 @@ public class Startup
             BaseDef = 23,
 
             Types = new List<string> { "electric" },
-            StartingAbilities = new List<PrefabStartingAbility>
-            {
-                new()
-                {
-                    AbilityName = "Electric Strike",
-                    Weight = 5
-                },
-                new()
-                {
-                    AbilityName = "Charge",
-                    Weight = 2
-                }
-            }
+            StartingAbilities = new List<string> { "electric_strike", "charge" }
         };
-        ctx.Pixes.InsertOne(pix);
+        ctx.PixPrefabs.InsertOne(pix);
 
         var electricStrike = new PrefabAbility
         {
+            PrefabId = "electric_strike",
             Name = "Electric Strike",
             Description = "A powerful electric attack.",
             Type = "electric",
@@ -158,10 +205,11 @@ public class Startup
             BaseAccuracy = 100,
             Category = "offensive"
         };
-        ctx.Abilities.InsertOne(electricStrike);
+        ctx.AbilityPrefabs.InsertOne(electricStrike);
 
         var charge = new PrefabAbility
         {
+            PrefabId = "charge",
             Name = "Charge",
             Description = "The pix charges up its energy and then releases it in a powerful attack.",
             Type = "electric",
@@ -169,6 +217,6 @@ public class Startup
             BaseAccuracy = 100,
             Category = "offensive"
         };
-        ctx.Abilities.InsertOne(charge);
+        ctx.AbilityPrefabs.InsertOne(charge);
     }
 }

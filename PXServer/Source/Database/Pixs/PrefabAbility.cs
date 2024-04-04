@@ -3,7 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 
-namespace PXResources.Source.Pixs;
+namespace PXServer.Source.Database.Pixs;
 
 
 [Table("prefab_abilities")]
@@ -12,6 +12,7 @@ public class PrefabAbility
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; init; } = null!;
+    public required string PrefabId { get; init; }
 
     public required string Name { get; init; }
     public required string Description { get; init; }

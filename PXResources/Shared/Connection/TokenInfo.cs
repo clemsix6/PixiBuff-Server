@@ -1,7 +1,7 @@
-namespace PXResources.Source.NetworkShared.Client;
+namespace PXResources.Shared.Connection;
 
 
-public class TokenInfoDTO
+public class TokenInfo
 {
     public required string Token { get; init; }
     public required DateTime Expiration { get; init; }

@@ -1,4 +1,5 @@
-using System.Text.Json;
+using Newtonsoft.Json;
+using NLog;
 using PXServer.Source.Exceptions;
 
 
@@ -7,11 +8,13 @@ namespace PXServer.Source.Middlewares;
 
 public class ExceptionMiddleware
 {
+    private readonly Logger logger;
     private readonly RequestDelegate next;
 
 
     public ExceptionMiddleware(RequestDelegate next)
     {
+        this.logger = LogManager.GetCurrentClassLogger();
         this.next = next;
     }
 
@@ -20,11 +23,11 @@ public class ExceptionMiddleware
     {
         try {
             await this.next(context);
-        } catch (RouteException ex) {
+        } catch (ServerException ex) {
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = ex.StatusCode;
 
-            var result = JsonSerializer.Serialize(
+            var result = JsonConvert.SerializeObject(
                 new
                 {
                     status = ex.StatusCode,
@@ -36,7 +39,7 @@ public class ExceptionMiddleware
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = 500;
 
-            var result = JsonSerializer.Serialize(
+            var result = JsonConvert.SerializeObject(
                 new
                 {
                     status = 500,
@@ -44,7 +47,7 @@ public class ExceptionMiddleware
                 }
             );
             await context.Response.WriteAsync(result);
-            throw;
+            this.logger.Error(ex.Message + ex.StackTrace);
         }
     }
 }

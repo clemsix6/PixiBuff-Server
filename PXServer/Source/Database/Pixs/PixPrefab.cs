@@ -3,15 +3,16 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 
-namespace PXResources.Source.Pixs;
+namespace PXServer.Source.Database.Pixs;
 
 
 [Table("prefab_pixes")]
-public class PrefabPix
+public class PixPrefab
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; init; } = null!;
+    public required string PrefabId { get; init; }
 
     public required string Name { get; init; }
     public required string Description { get; init; }
@@ -21,5 +22,5 @@ public class PrefabPix
     public required int BaseDef { get; init; }
 
     public required ICollection<string> Types { get; init; }
-    public required ICollection<PrefabStartingAbility> StartingAbilities { get; init; }
+    public required ICollection<string> StartingAbilities { get; init; }
 }
