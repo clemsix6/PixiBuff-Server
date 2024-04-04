@@ -2,7 +2,7 @@ namespace PXResources.Shared.Resources;
 
 
 [Serializable]
-public class CrateLoot
+public class PublicCrateLoot
 {
     public required string PixPrefabId { get; init; }
     public required int Level { get; init; }
@@ -12,7 +12,7 @@ public class CrateLoot
 
 
 [Serializable]
-public class Crate
+public class PublicCrate
 {
     public required string Id { get; init; }
 
@@ -20,5 +20,5 @@ public class Crate
     public required string Description { get; init; }
     public required DateTime AddedAt { get; init; }
 
-    public required List<CrateLoot> Loot { get; init; }
+    public required List<PublicCrateLoot> Loot { get; init; }
 }

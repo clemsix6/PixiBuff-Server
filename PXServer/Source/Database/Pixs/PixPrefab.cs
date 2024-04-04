@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using PXResources.Shared.Resources;
 
 
 namespace PXServer.Source.Database.Pixs;
@@ -17,10 +18,8 @@ public class PixPrefab
     public required string Name { get; init; }
     public required string Description { get; init; }
 
-    public required int BaseHp { get; init; }
-    public required int BaseAtk { get; init; }
-    public required int BaseDef { get; init; }
+    public required PublicPixStats BaseStats { get; init; }
 
-    public required ICollection<string> Types { get; init; }
-    public required ICollection<string> StartingAbilities { get; init; }
+    public required List<string> Types { get; init; }
+    public required List<string> StartingAbilities { get; init; }
 }

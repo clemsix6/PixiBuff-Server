@@ -23,10 +23,24 @@ public class MongoDbContext
     }
 
 
-    public IMongoCollection<PixPrefab> PixPrefabs => this.Database.GetCollection<PixPrefab>("prefab_pixes");
-    public IMongoCollection<PrefabAbility> AbilityPrefabs => this.Database.GetCollection<PrefabAbility>("prefab_abilities");
-    public IMongoCollection<CratePrefab> CratePrefabs => this.Database.GetCollection<CratePrefab>("prefab_crates");
-    public IMongoCollection<Player> RuntimePlayers => this.Database.GetCollection<Player>("runtime_players");
-    public IMongoCollection<RuntimeCrate> RuntimeCrates => this.Database.GetCollection<RuntimeCrate>("runtime_inventory_crates");
-    public IMongoCollection<RuntimeNotification> Notifications => this.Database.GetCollection<RuntimeNotification>("runtime_player_notifications");
+    public IMongoCollection<PixPrefab> PixPrefabs =>
+        this.Database.GetCollection<PixPrefab>("prefab_pixes");
+
+    public IMongoCollection<PrefabAbility> AbilityPrefabs =>
+        this.Database.GetCollection<PrefabAbility>("prefab_abilities");
+
+    public IMongoCollection<CratePrefab> CratePrefabs =>
+        this.Database.GetCollection<CratePrefab>("prefab_crates");
+
+    public IMongoCollection<Player> RuntimePlayers =>
+        this.Database.GetCollection<Player>("runtime_players");
+
+    public IMongoCollection<RuntimeCrate> RuntimeCrates =>
+        this.Database.GetCollection<RuntimeCrate>("runtime_inventory_crates");
+
+    public IMongoCollection<RuntimeNotification> Notifications =>
+        this.Database.GetCollection<RuntimeNotification>("runtime_player_notifications");
+
+    public IMongoCollection<RuntimePix> RuntimePixes =>
+        this.Database.GetCollection<RuntimePix>("runtime_inventory_pixs");
 }

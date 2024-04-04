@@ -12,11 +12,12 @@ using PXResources.Shared.Resources;
 using PXServer.Source.Database;
 using PXServer.Source.Database.Notifications;
 using PXServer.Source.Database.Players;
-using PXServer.Source.Engine;
 using PXServer.Source.Exceptions;
+using PXServer.Source.Managers;
+using PXServer.Source.Services;
 
 
-namespace PXServer.Source.Controllers.Client;
+namespace PXServer.Source.Controllers;
 
 
 [ApiController]
@@ -24,6 +25,7 @@ namespace PXServer.Source.Controllers.Client;
 public class PlayerController : ControllerBase
 {
     private readonly MongoDbContext database;
+    private readonly PlayerService playerService;
     private readonly PlayerManager playerManager;
     private readonly NotificationManager notificationManager;
     private readonly InventoryManager inventoryManager;
@@ -31,11 +33,13 @@ public class PlayerController : ControllerBase
 
     public PlayerController(
         MongoDbContext database,
+        PlayerService playerService,
         PlayerManager playerManager,
         NotificationManager notificationManager,
         InventoryManager inventoryManager)
     {
         this.database = database;
+        this.playerService = playerService;
         this.playerManager = playerManager;
         this.notificationManager = notificationManager;
         this.inventoryManager = inventoryManager;
@@ -102,19 +106,6 @@ public class PlayerController : ControllerBase
     }
 
 
-    private async Task<Player> GetPlayer()
-    {
-        if (!this.User.Claims.Any())
-            throw new ServerException("Invalid token", StatusCodes.Status401Unauthorized);
-        var userId = this.User.Claims.First().Value;
-        var userCursor = await this.database.RuntimePlayers.FindAsync(u => u.Id == userId);
-        var player = await userCursor.FirstOrDefaultAsync();
-        if (player == null)
-            throw new ServerException("Player not found", StatusCodes.Status401Unauthorized);
-        return player;
-    }
-
-
     [HttpPost("register")]
     [Consumes("application/json")]
     [Produces("application/json")]
@@ -167,7 +158,7 @@ public class PlayerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> TestToken()
     {
-        await GetPlayer();
+        await this.playerService.GetPlayer(this.User);
         return NoContent();
     }
 
@@ -178,24 +169,10 @@ public class PlayerController : ControllerBase
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<Inventory>> GetInventory()
+    public async Task<ActionResult<PublicInventory>> GetInventory()
     {
-        var player = await GetPlayer();
+        var player = await this.playerService.GetPlayer(this.User);
         var inventory = await this.inventoryManager.GetInventory(player);
         return Ok(inventory);
-    }
-
-
-    [Authorize]
-    [HttpGet("notifications")]
-    [Consumes("application/json")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<RuntimeNotification>>> GetNotifications()
-    {
-        var player = await GetPlayer();
-        var notifications = await this.notificationManager.GetNotifications(player);
-        return Ok(notifications);
     }
 }

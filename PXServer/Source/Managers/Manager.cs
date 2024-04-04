@@ -2,7 +2,7 @@ using NLog;
 using PXServer.Source.Database;
 
 
-namespace PXServer.Source.Engine;
+namespace PXServer.Source.Managers;
 
 
 public abstract class Manager

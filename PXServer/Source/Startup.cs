@@ -5,12 +5,14 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using NLog;
 using NLog.Web;
+using PXResources.Shared.Resources;
 using PXServer.Source.Database;
 using PXServer.Source.Database.Crates;
 using PXServer.Source.Database.Pixs;
-using PXServer.Source.Engine;
 using PXServer.Source.Exceptions;
+using PXServer.Source.Managers;
 using PXServer.Source.Middlewares;
+using PXServer.Source.Services;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 
@@ -97,13 +99,19 @@ public class Startup
         var database = new MongoDbContext();
         builder.Services.AddSingleton(database);
 
+        var playerService = new PlayerService(database);
+        builder.Services.AddSingleton(playerService);
+
         var notificationManager = new NotificationManager(database);
         builder.Services.AddSingleton(notificationManager);
 
-        var crateManager = new CrateManager(database);
+        var pixManager = new PixManager(database);
+        builder.Services.AddSingleton(pixManager);
+
+        var crateManager = new CrateManager(database, pixManager);
         builder.Services.AddSingleton(crateManager);
 
-        var inventoryManager = new InventoryManager(database, crateManager);
+        var inventoryManager = new InventoryManager(database, crateManager, pixManager);
         builder.Services.AddSingleton(inventoryManager);
 
         var playerManager = new PlayerManager(database, notificationManager, crateManager);
@@ -158,24 +166,6 @@ public class Startup
     }
 
 
-    private static void AddCrates()
-    {
-        var ctx = new MongoDbContext();
-        var starterCrate = new CratePrefab
-        {
-            PrefabId = "starter_crate",
-            Name = "Starter Crate",
-            Description = "A crate that contains a random starter pix.",
-            Loot =
-            [
-                new CrateLootPrefab { PixPrefabId = "anola", Weight = 100, Level = 1 }
-            ]
-        };
-
-        ctx.CratePrefabs.InsertOne(starterCrate);
-    }
-
-
     private static void AddElements()
     {
         var ctx = new MongoDbContext();
@@ -186,9 +176,7 @@ public class Startup
             Name = "Anola",
             Description = "An electric blue bird.",
 
-            BaseHp = 52,
-            BaseAtk = 31,
-            BaseDef = 23,
+            BaseStats = new PublicPixStats(79, 112, 31, 16),
 
             Types = new List<string> { "electric" },
             StartingAbilities = new List<string> { "electric_strike", "charge" }
@@ -218,5 +206,17 @@ public class Startup
             Category = "offensive"
         };
         ctx.AbilityPrefabs.InsertOne(charge);
+
+        var starterCrate = new CratePrefab
+        {
+            PrefabId = "starter_crate",
+            Name = "Starter Crate",
+            Description = "A crate that contains a random starter pix.",
+            Loot =
+            [
+                new CrateLootPrefab { PixPrefabId = "anola", Weight = 100, Level = 1 }
+            ]
+        };
+        ctx.CratePrefabs.InsertOne(starterCrate);
     }
 }

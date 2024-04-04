@@ -5,7 +5,7 @@ using PXServer.Source.Database.Players;
 using PXServer.Source.Exceptions;
 
 
-namespace PXServer.Source.Engine;
+namespace PXServer.Source.Managers;
 
 
 public class NotificationManager : Manager

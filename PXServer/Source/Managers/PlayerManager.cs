@@ -4,7 +4,7 @@ using PXServer.Source.Database.Notifications;
 using PXServer.Source.Database.Players;
 
 
-namespace PXServer.Source.Engine;
+namespace PXServer.Source.Managers;
 
 
 public class PlayerManager : Manager
