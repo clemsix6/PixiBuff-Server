@@ -108,13 +108,16 @@ public class Startup
         var pixManager = new PixManager(database);
         builder.Services.AddSingleton(pixManager);
 
+        var deckManager = new DeckManager(database);
+        builder.Services.AddSingleton(deckManager);
+
         var crateManager = new CrateManager(database, pixManager);
         builder.Services.AddSingleton(crateManager);
 
         var inventoryManager = new InventoryManager(database, crateManager, pixManager);
         builder.Services.AddSingleton(inventoryManager);
 
-        var playerManager = new PlayerManager(database, notificationManager, crateManager);
+        var playerManager = new PlayerManager(database, notificationManager, crateManager, deckManager);
         builder.Services.AddSingleton(playerManager);
     }
 

@@ -19,12 +19,12 @@ public class PlayerService
     }
 
 
-    public async Task<Player> GetPlayer(ClaimsPrincipal user)
+    public async Task<RuntimePlayer> GetPlayer(ClaimsPrincipal user)
     {
         if (!user.Claims.Any())
             throw new ServerException("Invalid token", StatusCodes.Status401Unauthorized);
         var userId = user.Claims.First().Value;
-        var filter = Builders<Player>.Filter.Eq(p => p.Id, userId);
+        var filter = Builders<RuntimePlayer>.Filter.Eq(p => p.Id, userId);
         var userCursor = await this.database.RuntimePlayers.FindAsync(filter);
         var player = await userCursor.FirstOrDefaultAsync();
         if (player == null)

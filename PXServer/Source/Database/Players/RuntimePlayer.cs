@@ -7,7 +7,7 @@ namespace PXServer.Source.Database.Players;
 
 
 [Table("runtime_players")]
-public class Player
+public class RuntimePlayer
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]

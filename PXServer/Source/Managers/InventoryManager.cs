@@ -1,6 +1,8 @@
+using MongoDB.Driver;
 using PXResources.Shared.Resources;
 using PXServer.Source.Database;
 using PXServer.Source.Database.Players;
+using PXServer.Source.Exceptions;
 
 
 namespace PXServer.Source.Managers;
@@ -19,11 +21,13 @@ public class InventoryManager : Manager
     }
 
 
-    public async Task<PublicInventory> GetInventory(Player player)
+    public async Task<PublicInventory> GetInventory(RuntimePlayer runtimePlayer)
     {
-        var crates = await this.crateManager.GetPublicCrates(player);
-        var pixes = await this.pixManager.GetPublicPixes(player);
+        // Get the crates and pixes from the database
+        var crates = await this.crateManager.GetPublicCrates(runtimePlayer);
+        var pixes = await this.pixManager.GetPublicPixes(runtimePlayer);
 
+        // Return the inventory
         return new PublicInventory
         {
             Crates = crates,

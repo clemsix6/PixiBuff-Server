@@ -1,5 +1,6 @@
 using MongoDB.Driver;
 using PXServer.Source.Database.Crates;
+using PXServer.Source.Database.Decks;
 using PXServer.Source.Database.Notifications;
 using PXServer.Source.Database.Pixs;
 using PXServer.Source.Database.Players;
@@ -32,15 +33,18 @@ public class MongoDbContext
     public IMongoCollection<CratePrefab> CratePrefabs =>
         this.Database.GetCollection<CratePrefab>("prefab_crates");
 
-    public IMongoCollection<Player> RuntimePlayers =>
-        this.Database.GetCollection<Player>("runtime_players");
+    public IMongoCollection<RuntimePlayer> RuntimePlayers =>
+        this.Database.GetCollection<RuntimePlayer>("runtime_players");
 
     public IMongoCollection<RuntimeCrate> RuntimeCrates =>
-        this.Database.GetCollection<RuntimeCrate>("runtime_inventory_crates");
+        this.Database.GetCollection<RuntimeCrate>("runtime_crates");
 
     public IMongoCollection<RuntimeNotification> Notifications =>
-        this.Database.GetCollection<RuntimeNotification>("runtime_player_notifications");
+        this.Database.GetCollection<RuntimeNotification>("runtime_notifications");
 
     public IMongoCollection<RuntimePix> RuntimePixes =>
-        this.Database.GetCollection<RuntimePix>("runtime_inventory_pixs");
+        this.Database.GetCollection<RuntimePix>("runtime_pixs");
+
+    public IMongoCollection<RuntimeDeck> RuntimeDecks =>
+        this.Database.GetCollection<RuntimeDeck>("runtime_decks");
 }
