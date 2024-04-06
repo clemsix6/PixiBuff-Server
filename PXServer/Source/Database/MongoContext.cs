@@ -36,6 +36,9 @@ public class MongoDbContext
     public IMongoCollection<RuntimePlayer> RuntimePlayers =>
         this.Database.GetCollection<RuntimePlayer>("runtime_players");
 
+    public IMongoCollection<WaitingPlayer> WaitingPlayers =>
+        this.Database.GetCollection<WaitingPlayer>("waiting_players");
+
     public IMongoCollection<RuntimeCrate> RuntimeCrates =>
         this.Database.GetCollection<RuntimeCrate>("runtime_crates");
 

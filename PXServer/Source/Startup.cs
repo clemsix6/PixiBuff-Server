@@ -99,6 +99,8 @@ public class Startup
         var database = new MongoDbContext();
         builder.Services.AddSingleton(database);
 
+        var mailManager = new MailManager(database);
+
         var playerService = new PlayerService(database);
         builder.Services.AddSingleton(playerService);
 
@@ -117,7 +119,7 @@ public class Startup
         var inventoryManager = new InventoryManager(database, crateManager, pixManager);
         builder.Services.AddSingleton(inventoryManager);
 
-        var playerManager = new PlayerManager(database, notificationManager, crateManager, deckManager);
+        var playerManager = new PlayerManager(database, notificationManager, crateManager, deckManager, mailManager);
         builder.Services.AddSingleton(playerManager);
     }
 
@@ -162,7 +164,7 @@ public class Startup
 
     public static void Main(string[] args)
     {
-        DotEnv.Load(new DotEnvOptions(envFilePaths: new[] { "auth.env", "db.env" }));
+        DotEnv.Load(new DotEnvOptions(envFilePaths: new[] { "auth.env", "db.env", "email.env" }));
         var builder = SetupBuilder(args);
         var app = builder.Build();
         RunApp(app);

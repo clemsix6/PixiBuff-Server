@@ -40,6 +40,13 @@
       <Resource Include="db.env">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Resource>
+      <Resource Include="email.env">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Resource>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Test\" />
     </ItemGroup>
 
 </Project>

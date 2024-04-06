@@ -17,18 +17,21 @@ public class PlayerManager : Manager
     private readonly NotificationManager notificationManager;
     private readonly CrateManager crateManager;
     private readonly DeckManager deckManager;
+    private readonly MailManager mailManager;
 
 
     public PlayerManager(
         MongoDbContext database,
         NotificationManager notificationManager,
         CrateManager crateManager,
-        DeckManager deckManager) :
+        DeckManager deckManager,
+        MailManager mailManager) :
         base(database)
     {
         this.notificationManager = notificationManager;
         this.crateManager = crateManager;
         this.deckManager = deckManager;
+        this.mailManager = mailManager;
     }
 
 
@@ -36,6 +39,16 @@ public class PlayerManager : Manager
     {
         var hashedBytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
         return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
+    }
+
+
+    private static string GenerateCode()
+    {
+        var code = new StringBuilder();
+        var random = new Random();
+        for (var i = 0; i < 6; i++)
+            code.Append(random.Next(0, 10));
+        return code.ToString();
     }
 
 
@@ -87,46 +100,132 @@ public class PlayerManager : Manager
     }
 
 
-    public async Task<RuntimePlayer> CreateUser(string name, string password)
+    private void CheckEmail(string email)
     {
-        // Check if the name and password are valid
+        // Check if the email is valid
+        if (!Regex.IsMatch(email, @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$"))
+            throw new ServerException("Invalid email", StatusCodes.Status400BadRequest);
+        // Check if the email is already taken
+        if (this.Database.RuntimePlayers.Find(x => x.Email == email).FirstOrDefault() != null)
+            throw new ServerException("Email is already taken", StatusCodes.Status409Conflict);
+    }
+
+
+    private void SendCode(string email, string code)
+    {
+        // Send the code to the email
+        this.mailManager.SendMail(
+            email,
+            "Verification code",
+            $"Your verification code is: {code}"
+        );
+    }
+
+
+    public async Task<WaitingPlayer> CreateWaitingPlayer(string name, string email, string password)
+    {
+        // Check if the name, email and password are valid
         CheckName(name);
+        CheckEmail(email);
         CheckPassword(password);
 
         // Hash the password
         var hashedPassword = HashPassword(password);
-        // Create the user with the hashed password
-        var user = new RuntimePlayer
+        // Create the waiting player with the hashed password
+        var waitingPlayer = new WaitingPlayer
         {
             Name = name,
-            Password = hashedPassword
+            Password = hashedPassword,
+            Email = email,
+            Code = GenerateCode(),
+            Expiration = DateTime.UtcNow.AddMinutes(5),
+            TryCount = 0
         };
 
-        // Insert the user into the database
-        await this.Database.RuntimePlayers.InsertOneAsync(user);
-        // Call the OnUserCreated event
-        await OnUserCreated(user);
-        // Return the user
-        return user;
+        // Insert the waiting player into the database
+        await this.Database.WaitingPlayers.InsertOneAsync(waitingPlayer);
+        // Send the code to the email
+        SendCode(email, waitingPlayer.Code);
+        // Return the waiting player
+        return waitingPlayer;
     }
 
 
-    public async Task<RuntimePlayer> CheckPassword(string username, string password)
+    private async Task CheckCode(WaitingPlayer player, string code)
     {
-        // Get the user from the database
-        var user = await this.Database.RuntimePlayers.Find(x => x.Name == username).FirstOrDefaultAsync();
-        // Check if the user exists
-        if (user == null)
-            throw new ServerException("User not found", StatusCodes.Status404NotFound);
+        // Check if the code is correct
+        if (player.Code == code)
+            return;
+        // If try count is more than 3, delete the player
+        if (player.TryCount >= 3) {
+            await this.Database.WaitingPlayers.DeleteOneAsync(x => x.Id == player.Id);
+            throw new ServerException("Try count exceeded", StatusCodes.Status400BadRequest);
+        }
+        // Increment the try count
+        player.TryCount++;
+        // Update the player in the database
+        await this.Database.WaitingPlayers.ReplaceOneAsync(x => x.Name == player.Name, player);
+        // Throw an exception
+        throw new ServerException("Incorrect code", StatusCodes.Status400BadRequest);
+    }
+
+
+    public async Task<RuntimePlayer> CheckPassword(string identifier, string password)
+    {
+        // Get the player from the database
+        var player = await this.Database.RuntimePlayers.Find(x => x.Name == identifier).FirstOrDefaultAsync();
+        // Check if the player exists
+        if (player == null) {
+            player = await this.Database.RuntimePlayers.Find(x => x.Email == identifier).FirstOrDefaultAsync();
+            if (player == null)
+                throw new ServerException("User not found", StatusCodes.Status404NotFound);
+        }
 
         // Hash the password
         var hashedPassword = HashPassword(password);
         // Check if the password is correct
-        if (user.Password != hashedPassword)
+        if (player.Password != hashedPassword)
             throw new ServerException("Incorrect password", StatusCodes.Status400BadRequest);
 
-        // Return the user
-        return user;
+        // Return the player
+        return player;
+    }
+
+
+    public async Task<RuntimePlayer> ValidatePlayer(string identifier, string code)
+    {
+        // Get the player from the database
+        var player = await this.Database.WaitingPlayers.Find(x => x.Name == identifier).FirstOrDefaultAsync();
+        if (player == null) {
+            player = await this.Database.WaitingPlayers.Find(x => x.Email == identifier).FirstOrDefaultAsync();
+            if (player == null)
+                throw new ServerException("Player not found or deleted", StatusCodes.Status404NotFound);
+        }
+        // Check if the waiting player exists
+        if (player == null)
+            throw new ServerException("Waiting player not found", StatusCodes.Status404NotFound);
+        // Check if the waiting player is expired
+        if (player.Expiration < DateTime.UtcNow) {
+            await this.Database.WaitingPlayers.DeleteOneAsync(x => x.Id == player.Id);
+            throw new ServerException("Waiting player is expired", StatusCodes.Status400BadRequest);
+        }
+
+        // Create the runtime player
+        var runtimePlayer = new RuntimePlayer
+        {
+            Name = player.Name,
+            Password = player.Password,
+            Email = player.Email
+        };
+
+        // Insert the runtime player into the database
+        await this.Database.RuntimePlayers.InsertOneAsync(runtimePlayer);
+        // Delete the waiting player from the database
+        await this.Database.WaitingPlayers.DeleteOneAsync(x => x.Id == player.Id);
+        // Call the OnUserCreated event
+        await OnUserCreated(runtimePlayer);
+        // Return the runtime player
+        return runtimePlayer;
     }
 
 

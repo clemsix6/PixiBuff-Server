@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -6,8 +6,8 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace PXServer.Source.Database.Players;
 
 
-[Table("runtime_players")]
-public class RuntimePlayer
+[Table("waiting_players")]
+public class WaitingPlayer
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
@@ -16,4 +16,8 @@ public class RuntimePlayer
     public required string Name { get; init; }
     public required string Password { get; init; }
     public required string Email { get; init; }
+
+    public required string Code { get; init; }
+    public required DateTime Expiration { get; init; }
+    public required int TryCount { get; set; }
 }

@@ -79,9 +79,33 @@ public class PlayerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<Credentials>> Register([FromBody] Authentication authentication)
+    public async Task<ActionResult<WaitingResult>> Register([FromBody] Authentication authentication)
     {
-        var player = await this.playerManager.CreateUser(authentication.Name, authentication.Password);
+        var player = await this.playerManager.CreateWaitingPlayer(
+            authentication.Name, authentication.Email, authentication.Password
+        );
+
+        var result = new WaitingResult
+        {
+            Expiration = player.Expiration,
+            MaxTryCount = 3
+        };
+
+        return CreatedAtAction(
+            nameof(Register), result
+        );
+    }
+
+
+    [HttpPost("validate")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<Credentials>> Validate([FromBody] Validation validation)
+    {
+        var player = await this.playerManager.ValidatePlayer(validation.Identifier, validation.Code);
 
         var credentials = new Credentials
         {
@@ -89,7 +113,9 @@ public class PlayerController : ControllerBase
             Name = player.Name,
             TokenInfo = GenerateJwtToken(player)
         };
-        return CreatedAtAction(nameof(Register), credentials);
+        return CreatedAtAction(
+            nameof(Validate), credentials
+        );
     }
 
 
